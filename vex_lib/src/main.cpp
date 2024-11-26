@@ -4,9 +4,14 @@
 #include "pros/abstract_motor.hpp"
 #include "pros/misc.hpp"
 #include "pros/motor_group.hpp"
+#include <cstdio>
+#include <iostream>
+#include <iterator>
 
 // lemlib docs:
 // https://lemlib.readthedocs.io/en/stable/tutorials/2_configuration.html
+
+char data_received[50];
 
 /**
  * Initialize motors
@@ -107,7 +112,7 @@ void on_center_button() {
  */
 void initialize() {
   pros::lcd::initialize();
-  chassis.calibrate();
+  // chassis.calibrate();
   pros::lcd::set_text(1, "Hello PROS User!");
 
   pros::lcd::register_btn1_cb(on_center_button);
@@ -145,6 +150,17 @@ void competition_initialize() {}
 void autonomous() {}
 
 /**
+ * Reads stdin for information from RPI.
+ * 
+ */
+bool read_from_pi() {
+  std::cout << "Waiting for data";
+  fgets(data_received, 50, stdin);
+  printf("%s\n", data_received);
+  return true;
+}
+
+/**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
  * the Field Management System or the VEX Competition Switch in the operator
@@ -161,6 +177,7 @@ void opcontrol() {
   pros::Controller controller(pros::E_CONTROLLER_MASTER);
   // loop forever
   while (true) {
+    bool x = read_from_pi();
     // get left y and right x positions
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
