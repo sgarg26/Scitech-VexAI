@@ -17,7 +17,9 @@ def write_to_brain(str):
     # jetson with JETSON_IDENTIFIER
     str = JETSON_IDENTIFIER + " " + str + "\n"
     print("entered func")
-    f = open("/dev/tty.usbmodem1401", "w")
+    # ACM1 is used for linux systems. This won't work
+    # with Mac or Windows systems.
+    f = open("/dev/ttyACM1", "w")
     print("opened vex file")
     f.write(str)
     print("written")
