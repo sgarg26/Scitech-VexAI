@@ -3,11 +3,11 @@
 > [!NOTE] 
 > This repo is still early stage.
 
-The V5 code uses the [LemLib template](!https://github.com/LemLib/LemLib).
+The V5 code uses the [LemLib template](https://github.com/LemLib/LemLib).
 
 ### AI Pipeline
 
-This repo is focused mainly on getting a robot working for the [Vex AI Competition](!https://www.vexrobotics.com/v5/competition/vex-ai?srsltid=AfmBOorL4r-guUf88ANdb4c1tMG45PZGn8NL3nQlj_xhJ-_WA2QPJmsj).
+This repo is focused mainly on getting a robot working for the [Vex AI Competition](https://www.vexrobotics.com/v5/competition/vex-ai?srsltid=AfmBOorL4r-guUf88ANdb4c1tMG45PZGn8NL3nQlj_xhJ-_WA2QPJmsj).
 
 The goal is to create a robot that autonomously drives to, and picks up scoring objects. Then it drives to various goals around the field and places objects on the rings. 
 
