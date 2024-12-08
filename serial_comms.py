@@ -2,6 +2,7 @@ import time
 import os
 import numpy as np
 from skimage.graph import MCP_Geometric, route_through_array
+import json
 
 
 # Constants indicating if a message was sent from the
@@ -40,6 +41,8 @@ path = route_through_array(input_cost_grid, (0, 0), (0, 60))
 real_path = np.array(path[0])
 real_path = real_path*resolution
 
+s = json.dumps(real_path.tolist())
+# print(s)
 # Loads in the model and weights
 
 
@@ -82,13 +85,13 @@ def main():
     time.sleep(0.5)
     f = open("testfile", "a+")
     print("-----", file=f)
-    print(real_path)
+    # print(real_path)
 
     while True:
         try:
-            write_to_brain("Hello from pi")
+            write_to_brain(s)
             time.sleep(1)
-            continue
+            break
 
             # output indicates wether or not to output the calculated
             # result to the brain
