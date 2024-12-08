@@ -49,7 +49,7 @@ s = json.dumps(real_path.tolist())
 def write_to_brain(str):
     # Open up serial port and send string to
     # jetson with JETSON_IDENTIFIER
-    str = JETSON_IDENTIFIER + " " + str + "\n"
+    str = str + "\n"
     print("entered func")
     # ACM1 is used for linux systems. This won't work
     # with Mac or Windows systems.

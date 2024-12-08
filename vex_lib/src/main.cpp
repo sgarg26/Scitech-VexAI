@@ -4,14 +4,17 @@
 #include "pros/abstract_motor.hpp"
 #include "pros/misc.hpp"
 #include "pros/motor_group.hpp"
+#include "pros/rtos.hpp"
+#include <cctype>
 #include <cstdio>
 #include <iostream>
-#include <iterator>
+#include <sstream>
+#include <vector>
 
 // lemlib docs:
 // https://lemlib.readthedocs.io/en/stable/tutorials/2_configuration.html
 
-char data_received[50];
+char data_received[1000] = {0};
 
 /**
  * Initialize motors
@@ -28,12 +31,12 @@ pros::MotorGroup
  * Drivetrain settings
  * TODO: add correct track width and wheel diameter.
  */
-lemlib::Drivetrain drivetrain(&left_motors,             // left motor group
-                              &right_motors,            // right motor group
-                              12,                       // 10 inch track width
+lemlib::Drivetrain drivetrain(&left_motors,               // left motor group
+                              &right_motors,              // right motor group
+                              12,                         // 10 inch track width
                               lemlib::Omniwheel::NEW_275, // using new 4" omnis
-                              600,                      // drivetrain rpm is 360
-                              2 // horizontal drift is 2 (for now)
+                              600, // drivetrain rpm is 360
+                              2    // horizontal drift is 2 (for now)
 );
 
 /**
@@ -112,7 +115,6 @@ void on_center_button() {
  */
 void initialize() {
   pros::lcd::initialize();
-  // chassis.calibrate();
   pros::lcd::set_text(1, "Hello PROS User!");
 
   pros::lcd::register_btn1_cb(on_center_button);
@@ -149,15 +151,65 @@ void competition_initialize() {}
  */
 void autonomous() {}
 
+std::vector<std::vector<int>> parse2DArray(const char *data) {
+  std::vector<std::vector<int>> array;
+  std::string sanitized;
+
+  // Sanitize input to keep only numbers, commas, and spaces
+  for (int i = 0; data[i] != '\0'; ++i) {
+    char ch = data[i];
+    if (std::isdigit(ch) || ch == ',' || ch == '-' || ch == ' ') {
+      sanitized += ch;
+    } else if (ch == '[') {
+      sanitized += ' '; // Replace '[' with space to indicate a new row
+    }
+  }
+
+  std::stringstream ss(sanitized);
+  std::string row;
+  printf("array data\n");
+  // Parse the sanitized string into rows
+  while (std::getline(ss, row, ' ')) {
+    if (!row.empty()) {
+      std::stringstream rowStream(row);
+      std::string num;
+      std::vector<int> rowData;
+
+      // Parse numbers in the row
+      while (std::getline(rowStream, num, ',')) {
+        if (!num.empty()) {
+          rowData.push_back(std::stoi(num));
+        }
+      }
+      printf("%d, %d\n", rowData[0], rowData[1]);
+      array.push_back(rowData);
+    }
+  }
+
+  return array;
+}
+
 /**
  * Reads stdin for information from RPI.
- * 
+ *
  */
-bool read_from_pi() {
+std::vector<std::vector<int>> read_from_pi() {
   std::cout << "Waiting for data";
-  fgets(data_received, 50, stdin);
-  printf("%s\n", data_received);
-  return true;
+  fgets(data_received, 200, stdin);
+
+  printf("printing data_rece: %s\n", data_received);
+  // printf("%s\n", data_received);
+  std::vector<std::vector<int>> array = parse2DArray(data_received);
+  int x = 0;
+  // for (const auto &row : array) {
+  //   std::cout << x;
+  //   for (int num : row) {
+  //     std::cout << num << ", ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
+  return array;
 }
 
 /**
@@ -174,18 +226,29 @@ bool read_from_pi() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-  pros::Controller controller(pros::E_CONTROLLER_MASTER);
-  // loop forever
+  chassis.calibrate();
+
   while (true) {
-    bool x = read_from_pi();
+    pros::Controller controller(pros::E_CONTROLLER_MASTER);
+    // loop forever
+    // while (!resp) {
+    std::vector<std::vector<int>> array = read_from_pi();
     // get left y and right x positions
-    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
+    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    // int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
 
-    // move the robot
-    chassis.arcade(leftY, leftX);
+    // // move the robot
+    // chassis.arcade(leftY, leftX);
 
-    // delay to save resources
+    // // delay to save resources
+    //   pros::delay(25);
+    // }
+    std::cout << "exited loop";
+    // for each point in the array, move the robot to that point
+    for (const auto &row : array) {
+      // printf("%d, %d\n", row[0], row[1]);
+      //chassis.moveToPoint(row[0], row[1], 2000, {.maxSpeed = 40});
+    }
     pros::delay(25);
   }
 }
