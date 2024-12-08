@@ -18,10 +18,10 @@ char data_received[50];
  * TODO: add correct motor config
  */
 pros::MotorGroup
-    left_motors({1, 2, 3},
+    left_motors({1, -2, 3, -4},
                 pros::MotorGearset::blue); // left motors on ports 1, 2, 3
 pros::MotorGroup
-    right_motors({4, 5, 6},
+    right_motors({-10, 9, -8, 7},
                  pros::MotorGearset::blue); // right motors on ports 4, 5, 6
 
 /**
@@ -30,16 +30,16 @@ pros::MotorGroup
  */
 lemlib::Drivetrain drivetrain(&left_motors,             // left motor group
                               &right_motors,            // right motor group
-                              10,                       // 10 inch track width
-                              lemlib::Omniwheel::NEW_4, // using new 4" omnis
-                              360,                      // drivetrain rpm is 360
+                              12,                       // 10 inch track width
+                              lemlib::Omniwheel::NEW_275, // using new 4" omnis
+                              600,                      // drivetrain rpm is 360
                               2 // horizontal drift is 2 (for now)
 );
 
 /**
  * Odom settings
  */
-pros::Imu imu(10);
+pros::Imu imu(15);
 
 /**
  * PID settings
