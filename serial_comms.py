@@ -12,17 +12,17 @@ JETSON_IDENTIFIER = "J"
 previous_data_received = []
 data_received = []
 
-resolution = 10
-field_size = 3600
+resolution = 1
+field_size = 144 # in
 grid_size = field_size // resolution
 
 occupancy_grid = np.zeros((grid_size, grid_size), dtype=int)
 
 leg_positions = [
-    (1800, 1200),
-    (2400, 1800),
-    (1800, 2400),
-    (1200, 1800)
+    (72, 48),
+    (48, 72),
+    (72, 96),
+    (96, 72)
 ]
 
 for leg_position in leg_positions:
@@ -36,7 +36,7 @@ for leg_position in leg_positions:
 input_cost_grid = np.ones((grid_size, grid_size), dtype=float)
 input_cost_grid[occupancy_grid == 1] = np.inf
 
-path = route_through_array(input_cost_grid, (0, 0), (0, 200))
+path = route_through_array(input_cost_grid, (0, 0), (0, 60))
 real_path = np.array(path[0])
 real_path = real_path*resolution
 
