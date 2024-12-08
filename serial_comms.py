@@ -1,5 +1,8 @@
 import time
 import os
+import numpy as np
+from skimage.graph import MCP_Geometric, route_through_array
+
 
 # Constants indicating if a message was sent from the
 # brain or the jetson
@@ -8,6 +11,34 @@ JETSON_IDENTIFIER = "J"
 
 previous_data_received = []
 data_received = []
+
+resolution = 10
+field_size = 3600
+grid_size = field_size // resolution
+
+occupancy_grid = np.zeros((grid_size, grid_size), dtype=int)
+
+leg_positions = [
+    (1800, 1200),
+    (2400, 1800),
+    (1800, 2400),
+    (1200, 1800)
+]
+
+for leg_position in leg_positions:
+    x, y = leg_position
+    x_cell = x // resolution
+    y_cell = y // resolution
+    occupancy_grid[y_cell, x_cell] = 1
+
+
+# cost map for grid
+input_cost_grid = np.ones((grid_size, grid_size), dtype=float)
+input_cost_grid[occupancy_grid == 1] = np.inf
+
+path = route_through_array(input_cost_grid, (0, 0), (0, 200))
+real_path = np.array(path[0])
+real_path = real_path*resolution
 
 # Loads in the model and weights
 
@@ -46,11 +77,12 @@ def read_from_brain():
     return False, data_received
 
 
-def __main__():
+def main():
     i = 0
     time.sleep(0.5)
     f = open("testfile", "a+")
     print("-----", file=f)
+    print(real_path)
 
     while True:
         try:
@@ -99,5 +131,5 @@ def __main__():
             exit()
 
 
-if __main__:
-    __main__()
+if __name__ == "__main__":
+    main()
