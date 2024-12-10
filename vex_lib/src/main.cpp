@@ -6,8 +6,6 @@
 #include "pros/motor_group.hpp"
 #include "pros/rtos.hpp"
 #include <cctype>
-#include <cstddef>
-#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>

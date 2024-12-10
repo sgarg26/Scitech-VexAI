@@ -21,7 +21,7 @@ This solution was inspired by the [Purdue Sigbots Team](https://github.com/BLRSA
 
 There have been several unanswered/old topics on Vex Forums regarding serial communication between the V5 and a microcontroller (RPi, Nvidia Jetson, etc). Hopefully our solution can make Sigbots' method a little clearer. 
 
-- A microntroller must be connected to the V5 using a micro-USB cable.
+- A microntroller (an Nvidia Jetson, Raspberry Pi, Orange Pi, etc. Any embedded Linux device will do) must be connected to the V5 using a micro-USB cable.
 1. Writing from the RPi
     - Serial ports are considered as files in Linux systems, and Python offers the `open` method built-in. `/dev/ttyACM1` can be opened and written to easily.
 
