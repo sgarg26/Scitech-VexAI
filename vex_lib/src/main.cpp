@@ -6,15 +6,17 @@
 #include "pros/motor_group.hpp"
 #include "pros/rtos.hpp"
 #include <cctype>
+#include <cstddef>
 #include <cstdio>
 #include <iostream>
-#include <sstream>
+#include <string>
 #include <vector>
 
 // lemlib docs:
 // https://lemlib.readthedocs.io/en/stable/tutorials/2_configuration.html
+using namespace std;
 
-char data_received[1000] = {0};
+char data_received[300] = {0};
 
 /**
  * Initialize motors
@@ -98,13 +100,13 @@ lemlib::Chassis chassis(drivetrain,         // drivetrain settings
  * "I was pressed!" and nothing.
  */
 void on_center_button() {
-  static bool pressed = false;
-  pressed = !pressed;
-  if (pressed) {
-    pros::lcd::set_text(2, "I was pressed!");
-  } else {
-    pros::lcd::clear_line(2);
-  }
+    static bool pressed = false;
+    pressed = !pressed;
+    if (pressed) {
+        pros::lcd::set_text(2, "I was pressed!");
+    } else {
+        pros::lcd::clear_line(2);
+    }
 }
 
 /**
@@ -114,10 +116,10 @@ void on_center_button() {
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-  pros::lcd::initialize();
-  pros::lcd::set_text(1, "Hello PROS User!");
+    pros::lcd::initialize();
+    pros::lcd::set_text(1, "Hello PROS User!");
 
-  pros::lcd::register_btn1_cb(on_center_button);
+    pros::lcd::register_btn1_cb(on_center_button);
 }
 
 /**
@@ -151,65 +153,48 @@ void competition_initialize() {}
  */
 void autonomous() {}
 
-std::vector<std::vector<int>> parse2DArray(const char *data) {
-  std::vector<std::vector<int>> array;
-  std::string sanitized;
+vector<vector<int>> parse2DArray(string data) {
+    vector<vector<int>> array;
+    vector<int> row;
+    string cur_coord;
+    bool is_new_row = false;
 
-  // Sanitize input to keep only numbers, commas, and spaces
-  for (int i = 0; data[i] != '\0'; ++i) {
-    char ch = data[i];
-    if (std::isdigit(ch) || ch == ',' || ch == '-' || ch == ' ') {
-      sanitized += ch;
-    } else if (ch == '[') {
-      sanitized += ' '; // Replace '[' with space to indicate a new row
-    }
-  }
-
-  std::stringstream ss(sanitized);
-  std::string row;
-  printf("array data\n");
-  // Parse the sanitized string into rows
-  while (std::getline(ss, row, ' ')) {
-    if (!row.empty()) {
-      std::stringstream rowStream(row);
-      std::string num;
-      std::vector<int> rowData;
-
-      // Parse numbers in the row
-      while (std::getline(rowStream, num, ',')) {
-        if (!num.empty()) {
-          rowData.push_back(std::stoi(num));
+    for (int i = 0; i < data.length() - 1; i++) {
+        if (data[i] == '[') {
+            is_new_row = false;
+            row.clear();
+        } else if (isdigit(data[i])) {
+            cur_coord += data[i];
+        } else if (data[i] == ',' && !is_new_row) {
+            row.push_back(stoi(cur_coord));
+            cur_coord.clear();
+        } else if (data[i] == ']') {
+            is_new_row = true;
+            row.push_back(stoi(cur_coord));
+            cur_coord.clear();
+            array.push_back(row);
         }
-      }
-      printf("%d, %d\n", rowData[0], rowData[1]);
-      array.push_back(rowData);
     }
-  }
 
-  return array;
+    return array;
 }
 
 /**
  * Reads stdin for information from RPI.
  *
  */
-std::vector<std::vector<int>> read_from_pi() {
-  std::cout << "Waiting for data";
-  fgets(data_received, 200, stdin);
-
-  printf("printing data_rece: %s\n", data_received);
-  // printf("%s\n", data_received);
-  std::vector<std::vector<int>> array = parse2DArray(data_received);
-  int x = 0;
-  // for (const auto &row : array) {
-  //   std::cout << x;
-  //   for (int num : row) {
-  //     std::cout << num << ", ";
-  //   }
-  //   std::cout << std::endl;
-  // }
-
-  return array;
+vector<vector<int>> read_from_pi() {
+    string data;
+    vector<vector<int>> array;
+    cout << "waiting for data\n";
+    getline(cin, data);
+    cout << data;
+    // printf("%s\n", data_received);
+    if (data.length() > 1) {
+        array = parse2DArray(data);
+        return array;
+    }
+    return array;
 }
 
 /**
@@ -226,29 +211,19 @@ std::vector<std::vector<int>> read_from_pi() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-  chassis.calibrate();
+    // chassis.calibrate();
 
-  while (true) {
-    pros::Controller controller(pros::E_CONTROLLER_MASTER);
-    // loop forever
-    // while (!resp) {
-    std::vector<std::vector<int>> array = read_from_pi();
-    // get left y and right x positions
-    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    // int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
-
-    // // move the robot
-    // chassis.arcade(leftY, leftX);
-
-    // // delay to save resources
-    //   pros::delay(25);
-    // }
-    std::cout << "exited loop";
-    // for each point in the array, move the robot to that point
-    for (const auto &row : array) {
-      // printf("%d, %d\n", row[0], row[1]);
-      //chassis.moveToPoint(row[0], row[1], 2000, {.maxSpeed = 40});
+    while (true) {
+        pros::Controller controller(pros::E_CONTROLLER_MASTER);
+        // loop forever
+        // while (!resp) {
+        vector<vector<int>> array = read_from_pi();
+        for (vector<int> row : array) {
+            for (int i : row) {
+                cout << i << " ";
+            }
+            cout << "\n";
+        }
+        pros::delay(25);
     }
-    pros::delay(25);
-  }
 }
