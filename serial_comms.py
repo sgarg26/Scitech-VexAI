@@ -1,14 +1,14 @@
 import time
-import os
 import numpy as np
-from skimage.graph import MCP_Geometric, route_through_array
+from skimage.graph import route_through_array
+from ultralytics import YOLO
 import json
+import pyrealsense2 as rs
+from ultralytics.utils.plotting import Annotator
 
+model = YOLO("./model_training/best_ncnn_model")
 
-# Constants indicating if a message was sent from the
-# brain or the jetson
-BRAIN_IDENTIFIER = "B"
-JETSON_IDENTIFIER = "J"
+# pipeline_wrapper = 
 
 previous_data_received = []
 data_received = []
@@ -42,9 +42,6 @@ real_path = np.array(path[0])
 real_path = real_path*resolution
 
 s = json.dumps(real_path.tolist())
-# print(s)
-# Loads in the model and weights
-
 
 def write_to_brain(str):
     # Open up serial port and send string to
@@ -83,8 +80,8 @@ def read_from_brain():
 def main():
     i = 0
     time.sleep(0.5)
-    f = open("testfile", "a+")
-    print("-----", file=f)
+    # f = open("testfile", "a+")
+    # print("-----", file=f)
     # print(real_path)
 
     while True:
@@ -109,7 +106,7 @@ def main():
 
             # Debugging/logging
             print(data_received)
-            print(data_received, file=f)
+            # print(data_received, file=f)
 
             # Time normailization
             data_received[0] = data_received[0] / 105
