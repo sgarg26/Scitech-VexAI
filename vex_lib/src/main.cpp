@@ -209,7 +209,8 @@ vector<vector<int>> read_from_pi() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-    // chassis.calibrate();
+    chassis.calibrate();
+    chassis.moveToPoint(10, 10, 20);
 
     while (true) {
         pros::Controller controller(pros::E_CONTROLLER_MASTER);
