@@ -32,6 +32,18 @@ for leg_position in leg_positions:
     y_cell = y // resolution
     occupancy_grid[y_cell, x_cell] = 1
 
+# Define the radius of the leg in grid cells
+leg_radius = 5
+
+# Mark the area taken up by each leg in the occupancy grid
+for leg_position in leg_positions:
+    x, y = leg_position
+    x_cell = x // resolution
+    y_cell = y // resolution
+    for i in range(-leg_radius, leg_radius + 1):
+        for j in range(-leg_radius, leg_radius + 1):
+            if 0 <= x_cell + i < grid_size and 0 <= y_cell + j < grid_size:
+                occupancy_grid[y_cell + j, x_cell + i] = 1
 
 # cost map for grid
 input_cost_grid = np.ones((grid_size, grid_size), dtype=float)
