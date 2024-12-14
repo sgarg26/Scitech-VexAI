@@ -1,0 +1,6 @@
+pyrealsense2
+cv2
+numpy
+matplotlib
+ultralytics
+scikit-image

@@ -37,11 +37,16 @@ for leg_position in leg_positions:
 input_cost_grid = np.ones((grid_size, grid_size), dtype=float)
 input_cost_grid[occupancy_grid == 1] = np.inf
 
-path = route_through_array(input_cost_grid, (0, 0), (0, 60))
+path = route_through_array(input_cost_grid, (0, 0), (60, 60))
 real_path = np.array(path[0])
 real_path = real_path*resolution
 
+path2 = route_through_array(input_cost_grid, (60, 60), (30, 94))
+real_path2 = np.array(path2[0])
+real_path2 = real_path2*resolution
+
 s = json.dumps(real_path.tolist())
+s2 = json.dumps(real_path2.tolist())
 # print(s)
 # Loads in the model and weights
 
@@ -90,6 +95,8 @@ def main():
     while True:
         try:
             write_to_brain(s)
+            i = input("enter")
+            write_to_brain(s2)
             time.sleep(1)
             break
 
