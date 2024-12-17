@@ -1,14 +1,26 @@
 import time
-import os
 import numpy as np
-from skimage.graph import MCP_Geometric, route_through_array
+from skimage.graph import route_through_array
+from ultralytics import YOLO
 import json
+import pyrealsense2 as rs
 
+cur_pos = (5, 10) # we assume bot starts at 0, 0 always. Position should be updated over time.
 
-# Constants indicating if a message was sent from the
-# brain or the jetson
-BRAIN_IDENTIFIER = "B"
-JETSON_IDENTIFIER = "J"
+model = YOLO("./model_training/best_ncnn_model")
+
+pipeline = rs.pipeline()
+config = rs.config()
+
+config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+pipeline.start(config)
+
+def get_center(bbox):
+    x1, y1, x2, y2, = bbox
+    cx = int((x1+x2) / 2)
+    cy = int((y1+y2) / 2)
+    return cx, cy
 
 previous_data_received = []
 data_received = []
@@ -49,31 +61,25 @@ for leg_position in leg_positions:
 input_cost_grid = np.ones((grid_size, grid_size), dtype=float)
 input_cost_grid[occupancy_grid == 1] = np.inf
 
-path = route_through_array(input_cost_grid, (0, 0), (50, 50))
-real_path = np.array(path[0])
-real_path = real_path*resolution
+def get_shortest_path(start, end):
+    path = route_through_array(input_cost_grid, start, end)
+    real_path = np.array(path[0])
+    real_path = real_path*resolution
+    s = json.dumps(real_path.tolist())
+    return s
 
-path2 = route_through_array(input_cost_grid, (50, 50), (30, 85))
-real_path2 = np.array(path2[0])
-real_path2 = real_path2*resolution
-
-s = json.dumps(real_path.tolist())
-s2 = json.dumps(real_path2.tolist())
-# print(s)
-# Loads in the model and weights
-
+def conv_to_in(pos):
+    return pos * 39.3701
 
 def write_to_brain(str):
     # Open up serial port and send string to
     # jetson with JETSON_IDENTIFIER
     str = str + "\n"
-    print("entered func")
+    print("Writing to v5")
     # ACM1 is used for linux systems. This won't work
     # with Mac or Windows systems.
     f = open("/dev/ttyACM1", "w")
-    print("opened vex file")
     f.write(str)
-    print("written")
     f.close()
 
 
@@ -98,59 +104,49 @@ def read_from_brain():
 
 
 def main():
-    i = 0
-    time.sleep(0.5)
-    f = open("testfile", "a+")
-    print("-----", file=f)
-    # print(real_path)
+    try:
+        s = None
+        found_something = False
+        while True:
+            frames = pipeline.wait_for_frames()
+            depth_frame = frames.get_depth_frame()
+            color_frame = frames.get_color_frame()
+            depth_intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
+            if not depth_frame or not color_frame: continue
 
-    while True:
-        try:
-            write_to_brain(s)
-            i = input("enter")
-            write_to_brain(s2)
-            time.sleep(1)
-            break
+            # depth_image = np.asanyarray(depth_frame.get_data())
+            color_image = np.asanyarray(color_frame.get_data())
+            x, y, z = (0, 0, 0)
+            results = model(color_image)
+            for r in results:
+                for box in r.boxes:
+                    print("found something")
+                    
+                    b = box.xyxy[0]
+                    cx, cy = get_center(b.cpu().numpy())
+                    distance = depth_frame.get_distance(cx, cy)
+                    if not distance > 0:
+                        continue
+                    found_something = True
+                    x, y, z = rs.rs2_deproject_pixel_to_point(depth_intrinsics, [cx, cy], distance)
+                    print(x, y, z)
+                    end = (int(np.round(cur_pos[0]+conv_to_in(x))), int(np.round(cur_pos[1]+conv_to_in(z))))
+                    print(end)
+                    s = get_shortest_path(cur_pos, np.abs(end))
+                    print(s)
+                    break # just get the first ring, travel to one ring per iteration.
+            # print(x, y, z)
+            if found_something: break
 
-            # output indicates wether or not to output the calculated
-            # result to the brain
-            # data recieved has the data we need to pass into our reinforcement
-            # learning model
-            output, data_received = read_from_brain()
 
-            # Converts items in the list of paramaters to floats
-            # removes BRAIN_IDENTIFIER
-            data_received = [float(x) for x in data_received[1:-1]]
+        write_to_brain(s)
+        time.sleep(1)
 
-            # Detect all rings in frame, add closest 10 ring
-            # positions to the rest of the data we recieved
-            # from the brain
-
-            # Debugging/logging
-            print(data_received)
-            print(data_received, file=f)
-
-            # Time normailization
-            data_received[0] = data_received[0] / 105
-
-            # Run an inference on the reinforcement learning model
-            # to find which way to move
-
-            # Logging
-
-            # Logging
-
-            # If this data is unique, send the results to the
-            # brain
-            if output:
-                string_to_send = "Return string for vex!"
-                write_to_brain(string_to_send)
-                i += 1
 
         # Ctrl + C on this program closes the entire pipeline
-        except KeyboardInterrupt:
-            print("Closing and Cleaning up...")
-            exit()
+    except KeyboardInterrupt:
+        print("Closing and Cleaning up...")
+        exit()
 
 
 if __name__ == "__main__":
