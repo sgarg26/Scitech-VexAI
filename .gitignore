@@ -1,3 +1,4 @@
 *.env
-*.solibr*
+*.so
+libr*
 pyrealsense2.cp*
