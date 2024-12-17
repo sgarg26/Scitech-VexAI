@@ -5,7 +5,7 @@ from ultralytics import YOLO
 import json
 import pyrealsense2 as rs
 
-cur_pos = (0, 0) # we assume bot starts at 0, 0 always. Position should be updated over time.
+cur_pos = (5, 10) # we assume bot starts at 0, 0 always. Position should be updated over time.
 
 model = YOLO("./model_training/best_ncnn_model")
 
@@ -109,15 +109,18 @@ def main():
             for r in results:
                 for box in r.boxes:
                     print("found something")
-                    found_something = True
+                    
                     b = box.xyxy[0]
                     cx, cy = get_center(b.cpu().numpy())
                     distance = depth_frame.get_distance(cx, cy)
+                    if not distance > 0:
+                        continue
+                    found_something = True
                     x, y, z = rs.rs2_deproject_pixel_to_point(depth_intrinsics, [cx, cy], distance)
                     print(x, y, z)
-                    end = (int(np.ceil(cur_pos[0]+conv_to_in(x))), int(np.ceil(cur_pos[1]+conv_to_in(z))))
+                    end = (int(np.round(cur_pos[0]+conv_to_in(x))), int(np.round(cur_pos[1]+conv_to_in(z))))
                     print(end)
-                    s = get_shortest_path(cur_pos, end)
+                    s = get_shortest_path(cur_pos, np.abs(end))
                     print(s)
                     break # just get the first ring, travel to one ring per iteration.
             # print(x, y, z)
